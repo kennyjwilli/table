@@ -96,8 +96,8 @@
       (let [id (str/join ":" (map column-id columns))
             headers (keep (fn [column]
                             (when (:visible? column)
-                             (assoc column
-                               :colSpan (or (some-> column :column-leaves count) 1))))
+                              (assoc column
+                                :colSpan (or (some-> column :column-leaves count) 1))))
                       columns)
             header-group {:id      id
                           :headers headers}
@@ -159,7 +159,7 @@
 
 (defn page-count
   [table]
-  (let [data-count (count (:data table))
+  (let [data-count (count (:rows table))
         pagination (-> table :state :pagination)
         {:keys [page-size]} pagination
         n (Math/ceil (/ data-count page-size))]
@@ -194,29 +194,30 @@
         (assoc pagination :page-index next-idx)))))
 
 (defn with-paginated-data
-  [data {:keys [pagination]}]
+  [rows {:keys [pagination]}]
   (let [{:keys [page-index page-size]
          :or   {page-index 0
                 page-size  10}} pagination
         data' (into []
-                (partition-all page-size)
-                data)]
+                (comp
+                  (filter :visible?)
+                  (partition-all page-size))
+                rows)]
     (get data' page-index)))
 
 (defn with-sorted-data
-  [data {:keys [sorting column-id->column]}]
+  [rows {:keys [sorting]}]
   (let [{:keys [column-id->sort-direction]} sorting
-        [column-id sort-direction] (first column-id->sort-direction)
-        accessor (get-in column-id->column [column-id :accessor])]
+        [column-id sort-direction] (first column-id->sort-direction)]
     (if (contains? #{:asc :desc} sort-direction)
       ;; TODO: implement :column-id-sort-order
       (sort-by
-        (fn [row] (accessor row))
+        (fn [row] ((get-in row [:column-id->cell column-id :get-value])))
         (case sort-direction
           :asc compare
           :desc #(compare %2 %1))
-        data)
-      data)))
+        rows)
+      rows)))
 
 (defn columns-filters-state
   []
@@ -230,13 +231,25 @@
   [*state {:keys [column-id visible?]}]
   (swap! *state assoc column-id visible?))
 
-(defn set-column-filters-search!
-  [*state {:keys [table column-id search-str]}]
+(defn set-column-filters-search-str!
+  [*state {:keys [column-id search-str]}]
   (swap! *state assoc-in [column-id :search-str] search-str))
 
 (defn column-filters-search-str
   [column-filters {:keys [column-id]}]
   (get-in column-filters [column-id :search-str]))
+
+(defn set-column-filters-value-set!
+  [*state {:keys [column-id values]}]
+  (swap! *state assoc-in [column-id :value-set] (some-> values set)))
+
+(defn column-filtered?
+  "Returns true if `column-id` is currently filtered."
+  [column-filters {:keys [column-id]}]
+  (let [{:keys [search-str value-set]} (get column-filters column-id)]
+    (or
+      (not (str/blank? search-str))
+      value-set)))
 
 (defn with-column-filters-data
   [data {:keys []}]
@@ -248,58 +261,87 @@
   (str/includes? (str/lower-case (str text)) (str/lower-case (str search-str))))
 
 (defn column-unique-values
+  "Returns a map of unique column value data."
   [table {:keys [column-id]}]
-  (let [{:keys [rows]} table]
-    (into #{}
-      (for [{:keys [visible-cells]} rows
-            {:keys [get-value column]} visible-cells
-            :when (= column-id (:id column))]
+  (let [{:keys [rows-raw]} table]
+    (reduce
+      (fn [acc value]
+        (-> acc
+          (update :values conj value)
+          (update-in [:value->count value] (fnil inc 0))))
+      {:values       #{}
+       :value->count {}}
+      (for [{:keys [column-id->cell]} rows-raw
+            :let [{:keys [get-value]} (get column-id->cell column-id)]]
         (get-value)))))
 
-(defn with-row-data
+(defn data->rows-state
   [data {:keys [flat-columns
                 column-filters]}]
-  (into []
-    (comp
-      (map-indexed
-        (fn [row-idx data-row]
-          (let [row-id (or row-idx)
-                visible-cells (reduce
-                                (fn [cells column]
-                                  (let [col-id (column-id column)
-                                        search-str (get-in column-filters [col-id :search-str])
-                                        get-value #((:accessor column) data-row)
-                                        cell {:id        (str row-id ":" col-id)
-                                              :row       data-row
-                                              :cell      (or (:cell column) (get-value))
-                                              :get-value get-value
-                                              :column    column}]
-
-                                    (if (or
-                                          (str/blank? search-str)
-                                          (search-matches? (get-value) search-str))
-                                      (conj cells cell)
-                                      (reduced nil))))
-                                [] flat-columns)]
-            (when visible-cells
-              {:id            row-id
-               :visible-cells visible-cells}))))
-      (filter some?))
+  (reduce
+    (fn [acc data-row]
+      (let [row-idx (:idx acc)
+            row-id (or row-idx)
+            row-map
+            (reduce
+              (fn [acc column]
+                (let [col-id (column-id column)
+                      {:keys [search-str value-set]} (get column-filters col-id)
+                      get-value #((:accessor column) data-row)
+                      cell {:id        (str row-id ":" col-id)
+                            :row       data-row
+                            :cell      (or (:cell column) (get-value))
+                            :get-value get-value
+                            :column    column}
+                      cell-visible?
+                      (and
+                        ;; Text search
+                        (or
+                          (str/blank? search-str)
+                          (search-matches? (get-value) search-str))
+                        ;; Enum (value set) match
+                        (or
+                          ;; nil implies no filtering is active
+                          (nil? value-set)
+                          ;; if filtering is active, value-set must be non-nil & value must be in value-set
+                          (and
+                            value-set
+                            (contains? value-set (get-value)))))]
+                  (-> acc
+                    (update :visible-cells conj cell)
+                    (update :column-id->cell assoc col-id cell)
+                    (assoc
+                      :visible? (if (false? (:visible? acc))
+                                  false
+                                  cell-visible?)))))
+              {:id              row-id
+               :visible?        true
+               :visible-cells   []
+               :column-id->cell {}} flat-columns)]
+        (cond-> (-> acc
+                  (update :idx inc)
+                  (update :rows-raw conj row-map))
+          (:visible? row-map)
+          (update :rows-visible conj row-map))))
+    {:idx          0
+     :rows-raw     []
+     :rows-visible []}
     data))
 
 (defn rows
   [argm]
   (let [{:keys [data
-                column-id->column
                 sorting
                 pagination]} argm
-        data'
-        (cond-> data
-          sorting (with-sorted-data {:sorting sorting :column-id->column column-id->column})
-          true (with-row-data argm)
-          ;; pagination must go last, else we just sort/filter/etc the paginatied data
+        {:keys [rows-raw rows-visible]} (data->rows-state data argm)
+        rows-ret
+        (cond-> rows-visible
+          sorting (with-sorted-data {:sorting sorting})
+          ;; pagination must go last, else we just sort/filter/etc the paginated data
           pagination (with-paginated-data {:pagination pagination}))]
-    data'))
+    {:rows         rows-ret
+     :rows-visible rows-visible
+     :rows-raw     rows-raw}))
 
 (comment
   (with-sorted-data data {:sorting sorting :column-id->column column-id->column})
@@ -352,15 +394,17 @@
                   raw-columns)
         header-groups (header-groups {:columns columns})
         flat-columns (into [] (mapcat find-leaves) columns)
-        column-id->column (into {} (map (juxt :id identity)) flat-columns)
-        rows (rows {:data              data
-                    :flat-columns      (filter :visible? flat-columns)
-                    :column-id->column column-id->column
-                    :sorting           sorting
-                    :pagination        pagination
-                    :column-filters    column-filters})]
+        ;column-id->column (into {} (map (juxt :id identity)) flat-columns)
+        {:keys [rows rows-raw rows-visible]}
+        (rows {:data           data
+               :flat-columns   (filter :visible? flat-columns)
+               :sorting        sorting
+               :pagination     pagination
+               :column-filters column-filters})]
     (assoc table-argm
       :columns columns
       :header-groups header-groups
       :flat-columns flat-columns
-      :rows rows)))
+      :rows rows
+      :rows-raw rows-raw
+      :rows-visible rows-visible)))

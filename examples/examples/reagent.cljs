@@ -144,7 +144,7 @@
                             [:input {:type      "text"
                                      :value     (table/column-filters-search-str column-filters {:column-id (:id header)})
                                      :on-change (fn [event]
-                                                  (table/set-column-filters-search! *column-filters
+                                                  (table/set-column-filters-search-str! *column-filters
                                                     {:table      table
                                                      :column-id  (:id header)
                                                      :search-str (.. event -target -value)}))}])
