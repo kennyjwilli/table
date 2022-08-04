@@ -168,7 +168,7 @@
 (defn next-page-index
   [table {:keys [page-op page-index]}]
   (let [max-pages (page-count table)
-        max-idx (dec max-pages)
+        max-idx (max 0 (dec max-pages))
         next-idx (case page-op
                    :first 0
                    :previous (dec page-index)
