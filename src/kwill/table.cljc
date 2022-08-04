@@ -159,7 +159,7 @@
 
 (defn page-count
   [table]
-  (let [data-count (count (:rows table))
+  (let [data-count (count (:rows-visible table))
         pagination (-> table :state :pagination)
         {:keys [page-size]} pagination
         n (Math/ceil (/ data-count page-size))]
