@@ -405,7 +405,11 @@
     (assoc table-argm
       :columns columns
       :header-groups header-groups
+      ;; Table leaf columns -- no hierarchy.
       :flat-columns flat-columns
+      ;; final rows presented to the user, including pagination
       :rows rows
+      ;; Row data before any processing has occurred
       :rows-raw rows-raw
+      ;; All rows that could be visible to the user, unpaginated
       :rows-visible rows-visible)))
