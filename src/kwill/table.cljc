@@ -315,6 +315,7 @@
                                   false
                                   cell-visible?)))))
               {:id              row-id
+               :data            data-row
                :visible?        true
                :visible-cells   []
                :column-id->cell {}} flat-columns)]
