@@ -131,7 +131,9 @@
         leaf? (not children-columns)
         visible? (or
                    (and (not leaf?) (some :visible? children-columns))
-                   (and leaf? (if-some [v (get column-visibility id)] v true)))
+                   (and leaf? (if-some [v (get column-visibility id)]
+                                v
+                                (if-some [v (:default-visible? column)] v true))))
         leaves (when (:columns column) (find-leaves column))
         sort-direction (get-in sorting [:column-id->sort-direction id])]
     (-> column
