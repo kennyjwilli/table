@@ -16,7 +16,7 @@ Returns a [`Table`](#Table) that contains the necessary information to render a 
 ### `column-unique-values`
 Returns information about unique data in the table. Useful for displaying lists of filterable values. 
 
-### column-filtered?` 
+### `column-filtered?` 
 Returns `true` if the column is currently filtered.
 
 ### 
