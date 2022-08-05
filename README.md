@@ -2,6 +2,11 @@
 Headless Clojure(Script) UI for building tables, heavily inspired by [TanStack Table v8](https://github.com/TanStack/table).
 
 ## Usage
+
+```clojure
+dev.kwill/table {:mvn/version "0.1.14"}
+```
+
 See `examples/examples/reagent.cljs` for an example of how to use the library with [Reagent](https://github.com/reagent-project/reagent). 
 
 ## API 
