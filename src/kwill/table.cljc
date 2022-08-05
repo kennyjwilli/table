@@ -152,10 +152,12 @@
         sort-direction
         (assoc :sort-direction sort-direction)))))
 
+(def default-page-size 10)
+
 (defn pagination-state
   []
   {:page-index 0
-   :page-size  10})
+   :page-size  default-page-size})
 
 (defn page-count
   [table]
