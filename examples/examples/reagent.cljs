@@ -4,6 +4,23 @@
     [kwill.table :as table]
     [reagent.core :as r]))
 
+(def example-columns
+  [{:header  "Name"
+    :columns [{:accessor :first-name
+               :header   "firstName"}
+              {:accessor :last-name
+               :header   "lastName"}]}
+   {:header  "Info"
+    :columns [{:accessor :age
+               :header   (constantly "Age")}
+              {:header  "More Info"
+               :columns [{:accessor :visits
+                          :header   "Visits"}
+                         {:accessor :status
+                          :header   "Status"}
+                         {:accessor :progress
+                          :header   "Profile Progress"}]}]}])
+
 (defn render
   [renderable ctx]
   (if (fn? renderable)
@@ -13,7 +30,7 @@
 (defonce example-data (datagen/make-data {:size 100 :seed 1}))
 
 (comment
-  (table/table {:columns table/example-columns
+  (table/table {:columns example-columns
                 :data    example-data})
   )
 
@@ -105,7 +122,7 @@
                 *pagination (r/atom (table/pagination-state))
                 *column-filters (r/atom (table/columns-filters-state))
                 *column-visibility (r/atom (table/column-visibility-state))]
-     (let [table (table/table {:columns table/example-columns
+     (let [table (table/table {:columns example-columns
                                :data    example-data
                                :state   {:sorting           @*sorting
                                          :pagination        @*pagination
