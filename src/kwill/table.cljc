@@ -138,9 +138,10 @@
                     :column-filters column-filters})]
     (assoc table-argm
       :columns columns
-      :header-groups header-groups
       ;; Table leaf columns -- no hierarchy.
       :flat-columns flat-columns
+      ;; Header
+      :header-groups header-groups
       ;; final rows presented to the user, including pagination
       :rows rows
       ;; Row data before any processing has occurred
