@@ -70,3 +70,9 @@ Represents a single header cell. Builds upon the data present in a [Column](#Col
 - `placeholder?`: True when the header represents an "invisible" column created to align nested columns. These header columns (e.g., `th`) should be rendered, but no content should be present.
 ### Renderable
 An object that the code rendering the UI can use to display the component (e.g., for Reagent, this might be a hiccup vector or simply a string).
+
+## Future work
+- Server side pagination
+- Footer
+- Rearrange columns
+- Resize columns
