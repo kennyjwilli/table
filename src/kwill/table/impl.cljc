@@ -175,7 +175,7 @@
                       {:keys [search-str value-set]} (get column-filters col-id)
                       get-value #((:accessor column) data-row)
                       cell {:id        (str row-id ":" col-id)
-                            :row       data-row
+                            :data      data-row
                             :cell      (or (:cell column) (get-value))
                             :get-value get-value
                             :column    column}
