@@ -47,6 +47,8 @@ Any additional, user controlled keys can be added to the column map. To remove p
 - `sort-direction`: Optional enum set to either `:asc` or `:desc` when the column is sorted, else unset or `nil`.
 
 ### Row
+- `visible-cells`: Seq of [Cells](#Cell) visible to the user. A cell may not be visible due to column filtering.
+- `cells-raw`: Seq of unfiltered [Cells](#Cell). 
 - `id`: A unique identifier for the table row.
 - `data`: The data input map used to create the row.
 - `visible?`: True if the row is visible to the user. For example, the row has not been filtered out. 

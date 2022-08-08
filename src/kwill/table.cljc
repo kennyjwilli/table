@@ -132,7 +132,7 @@
         ;column-id->column (into {} (map (juxt :id identity)) flat-columns)
         {:keys [rows rows-raw rows-visible]}
         (impl/rows {:data           data
-                    :flat-columns   (filter :visible? flat-columns)
+                    :flat-columns   flat-columns
                     :sorting        sorting
                     :pagination     pagination
                     :column-filters column-filters})]

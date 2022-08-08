@@ -193,17 +193,21 @@
                           (and
                             value-set
                             (contains? value-set (get-value)))))]
-                  (-> acc
-                    (update :visible-cells conj cell)
-                    (update :column-id->cell assoc col-id cell)
-                    (assoc
-                      :visible? (if (false? (:visible? acc))
-                                  false
-                                  cell-visible?)))))
+                  (cond->
+                    (-> acc
+                      (update :cells-raw conj cell)
+                      (update :column-id->cell assoc col-id cell)
+                      (assoc
+                        :visible? (if (false? (:visible? acc))
+                                    false
+                                    cell-visible?)))
+                    (:visible? column)
+                    (update :visible-cells conj cell))))
               {:id              row-id
                :data            data-row
                :visible?        true
                :visible-cells   []
+               :cells-raw       []
                :column-id->cell {}} flat-columns)]
         (cond-> (-> acc
                   (update :idx inc)
