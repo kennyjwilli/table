@@ -202,11 +202,11 @@
                                     false
                                     cell-visible?)))
                     (:visible? column)
-                    (update :visible-cells conj cell))))
+                    (update :cells-visible conj cell))))
               {:id              row-id
                :data            data-row
                :visible?        true
-               :visible-cells   []
+               :cells-visible   []
                :cells-raw       []
                :column-id->cell {}} flat-columns)]
         (cond-> (-> acc

@@ -175,7 +175,7 @@
                   (map
                     (fn [cell]
                       [:td {:key (:id cell)} (render (:cell cell) cell)])
-                    (:visible-cells row))])
+                    (:cells-visible row))])
             (:rows table))]]
         [Pagination {:page-size           (:page-size @*pagination)
                      :page-sizes          [10 20 50 100]
